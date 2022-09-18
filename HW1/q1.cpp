@@ -1,6 +1,10 @@
 #include <cmath>
 #include <array>
 #include <iostream>
+#include <bitset>
+#include <iomanip>
+#include <climits>
+#include <cstring>
 
 int main()
 {
@@ -8,20 +12,29 @@ int main()
     float arr[] = {10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
     for(int i=0; i < 8; i++){
 
-        float value;
-        value = pow((1 + (1 / arr[i])), arr[i]);
-        std::cout << arr[i] << " " << value << std::endl;
+        //float x = (1.0 / arr[i]);
+        //float value = pow((1.0 + x), arr[i]);
+        float x = 1.0 + (1.0 / arr[i]);
+        float value = pow(x, arr[i]);
+
+        std::cout << arr[i] << " " << std::setprecision(16) << value << std::endl;
 
     }
-    std::cout << "As the value of n increases, e approaches 2.718, however as n increases further the 1/n term becomes much smaller leading to imprecision in the 1 + 1/n calculation where 1/n ~ 0, and thus for large n e becomes 1." << std::endl;
+    std::cout << "As the value of n increases, e approaches 2.718, however as n increases further the 1/n term becomes much smaller leading to imprecision in the 1.0 + 1/n calculation where 1/n ~ 0." << std::endl;
     std::cout << std::endl;
 
     // 1b
     for(int i=0; i < 8; i++){
 
-        double x1 = (1 / arr[i]);
-        float value = log(1 + x1);
-        std::cout << arr[i] << " " << value << std::endl;
+        float x1 = (1 / arr[i]);
+        volatile float y = 1 + x1;
+        volatile float z = y - 1;
+
+        float value = z == 0 ? x1 : x1 * log(y) / z;
+
+        float final_value = arr[i]*value;
+
+        std::cout << arr[i] << " " << exp(final_value) << std::endl;
 
     }
     std::cout << std::endl;
@@ -66,8 +79,40 @@ int main()
         std::cout << std::endl;
     }
 
-    std::cout << "As the value of x decreases, z approaches 1 but if x is too small its precision is lost and so z will deviate from 1." << std::endl;
+    std::cout << "As the value of x decreases, z approaches 1 but if x is too small its precision is lost and so z will deviate alot from 1." << std::endl;
     std::cout << std::endl;
 
+    // 4
+    // Extract the exponent.
+    union
+    {
+        double input; // assumes sizeof(double) == sizeof(long)
+        unsigned long output;
 
+    } data;
+
+    //data.input = 1.9999999999999996;
+    data.input = 6.5;
+
+    std::bitset<sizeof(double) * CHAR_BIT> bits(data.output);
+    std::cout << bits << std::endl;
+
+    // Shift all bits to the right so that the LSB of the exponent is the LSB.
+    std::bitset<sizeof(double) * CHAR_BIT> rs = bits >> 52;
+    std::cout << rs << std::endl;
+
+    // Create an bit mask of all 1s and then right shift it 53 spaces. This is so that you only AND with the exponent regions.
+    // The mantissa has been discarded by right shifting 52 bits, and the sign is the only thing left, so by shifting 53 bits we are avoiding
+    // the sign bit.
+    std::bitset<sizeof(double) * CHAR_BIT> mask(-1);
+    std::bitset<sizeof(double) * CHAR_BIT> mask_rs = mask >> 53;
+    std::cout << mask_rs << std::endl;
+
+    // Use Bit wise & to extract the exponent and then convert to unsigned long integer.
+    std::bitset<sizeof(double) * CHAR_BIT> exponent = rs & mask_rs;
+    
+    unsigned long exp = exponent.to_ulong();
+    unsigned long ub_exp = exp - 1023;
+
+    std::cout << "Exponent is: " << exp << " Unbiased Exponent is: " << ub_exp << " Value of the exponent term: " << pow(2, ub_exp) << std::endl;
 }
