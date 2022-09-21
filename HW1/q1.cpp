@@ -6,6 +6,47 @@
 #include <climits>
 #include <cstring>
 
+void exponent_extractor(double num)
+{
+    // Extract the exponent.
+    union
+    {
+        double input; // assumes sizeof(double) == sizeof(long)
+        unsigned long output;
+
+    } data;
+
+    data.input = num;
+
+    std::bitset<sizeof(double) * CHAR_BIT> bits(data.output);
+    std::cout << "Bit value of double entered: " << bits << std::endl;
+
+    // Shift all bits to the right so that the LSB of the exponent is the LSB.
+    std::bitset<sizeof(double) * CHAR_BIT> rs = bits >> 52;
+    std::cout << "Right shifting 52 bits: " << rs << std::endl;
+
+    // Create an bit mask of all 1s and then right shift it 53 spaces. This is so that you only AND with the exponent regions.
+    // The mantissa has been discarded by right shifting 52 bits, and the sign is the only thing left, so by shifting 53 bits we are avoiding
+    // the sign bit.
+    std::bitset<sizeof(double) * CHAR_BIT> mask(-1);
+    std::bitset<sizeof(double) * CHAR_BIT> mask_rs = mask >> 53;
+    std::cout << "Mask to extract exponent: " << mask_rs << std::endl;
+
+    // Use Bit wise & to extract the exponent and then convert to unsigned long integer.
+    std::bitset<sizeof(double) * CHAR_BIT> exponent = rs & mask_rs;
+    
+    unsigned long exp = exponent.to_ulong();
+    unsigned long ub_exp = exp - 1023;
+
+    std::cout << "Exponent is: " << exp << " Unbiased Exponent is: " << ub_exp << " Value of the exponent term: " << pow(2, ub_exp) << std::endl;
+
+    // Convert exponent
+    int b10_exponent = log10(2) * ub_exp;
+    std::cout << "Base 10 is: " << b10_exponent << std::endl;
+    std::cout << std::endl;
+
+}
+
 int main()
 {
     // 1a
@@ -83,36 +124,7 @@ int main()
     std::cout << std::endl;
 
     // 4
-    // Extract the exponent.
-    union
-    {
-        double input; // assumes sizeof(double) == sizeof(long)
-        unsigned long output;
-
-    } data;
-
-    //data.input = 1.9999999999999996;
-    data.input = 6.5;
-
-    std::bitset<sizeof(double) * CHAR_BIT> bits(data.output);
-    std::cout << bits << std::endl;
-
-    // Shift all bits to the right so that the LSB of the exponent is the LSB.
-    std::bitset<sizeof(double) * CHAR_BIT> rs = bits >> 52;
-    std::cout << rs << std::endl;
-
-    // Create an bit mask of all 1s and then right shift it 53 spaces. This is so that you only AND with the exponent regions.
-    // The mantissa has been discarded by right shifting 52 bits, and the sign is the only thing left, so by shifting 53 bits we are avoiding
-    // the sign bit.
-    std::bitset<sizeof(double) * CHAR_BIT> mask(-1);
-    std::bitset<sizeof(double) * CHAR_BIT> mask_rs = mask >> 53;
-    std::cout << mask_rs << std::endl;
-
-    // Use Bit wise & to extract the exponent and then convert to unsigned long integer.
-    std::bitset<sizeof(double) * CHAR_BIT> exponent = rs & mask_rs;
-    
-    unsigned long exp = exponent.to_ulong();
-    unsigned long ub_exp = exp - 1023;
-
-    std::cout << "Exponent is: " << exp << " Unbiased Exponent is: " << ub_exp << " Value of the exponent term: " << pow(2, ub_exp) << std::endl;
+    // Function above has all the code and comments
+    exponent_extractor(65.56);
+    exponent_extractor(1.5);
 }
