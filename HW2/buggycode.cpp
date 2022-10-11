@@ -55,12 +55,10 @@ allocator::release(void* mem)
 void*
 allocator::allocate(uint64_t size)
 {
-  // Changed allocation size from 4096 bits which would only accomodate 512 bytes at most, but we need 538.
-
-  //const uint64_t offbits = 4095UL;
-  const uint64_t offbits = 4304UL;
-  // const size_t allocSize = (size+sizeof(header)+offbits) & (~offbits);
-  const size_t allocSize = offbits;
+  // Changed allocation size from 4096 bytes which would only accomodate 512 bytes at most, but we need 538.
+  const uint64_t offbits = 4095UL;
+  // Allocation size is now the size (number of elements) times the size of each element. Instead of just being size + sizeof(header) + offbits.
+  const size_t allocSize = (size*sizeof(double)+sizeof(header)+offbits) & (~offbits);
   header* buffer = (header*) mmap(NULL, allocSize, PROT_READ|PROT_WRITE,
 				  MAP_PRIVATE|MAP_ANONYMOUS , -1 , 0);
   buffer->next = head.next;
@@ -77,7 +75,8 @@ double mean(const double* array, const uint64_t len)
   {
     mean += array[i];
   }
-  return mean;
+  // Returning the mean/length
+  return mean/len;
 }
 
 allocator* globalAllocator=NULL;
@@ -89,7 +88,7 @@ void compute(double* a, double*& b, uint64_t len2)
   for (unsigned int j=0; j<looplen; j++)
   {
     b[j] = rand()%2 ? -a[j] : a[j];
-    // Used for debugging: std::cout << "B value is: " << b[j] << std::endl;
+    // Debugging: std::cout << "B value is: " << b[j] << std::endl;
   }
 }
 
@@ -104,7 +103,8 @@ uint64_t getarrdim()
   return dim1/dim3;
 }
 
-void getdata(const char* datafile, double* buffer, uint64_t& len)
+// Passing buffer as a reference to a pointer because buffer is already defined as a pointer in main.
+void getdata(const char* datafile, double*& buffer, uint64_t& len)
 {
   int fd = open(datafile, O_RDONLY);
   if (fd == -1)
@@ -113,6 +113,10 @@ void getdata(const char* datafile, double* buffer, uint64_t& len)
     exit(1);  
     }
   read(fd, &len, sizeof(uint64_t));
+
+  // Allocate memory to buffer using length from file.  
+  buffer = new double[len];
+
   read(fd, buffer, len*sizeof(double));
   close(fd);
 }
@@ -133,24 +137,38 @@ int main(int argc, char* argv[])
 
   const char* datafile = argv[1];
   uint64_t dlen = 0;
-  uint64_t dimarr = getarrdim();
-  double arr[dimarr];
+
+  // Can't call dimarr because then the random number will be offset and it wont work.
+
+  //uint64_t dimarr = getarrdim();
+  //double arr[dimarr];
+
+  // Creating pointer to array here and null pointer
+  double* arr;
   double* ptr1 = NULL;
+
+  // Getting data information to fill out array and dlen
+  getdata(datafile, arr, dlen);
 
   // Allocate memory here so that the destructor is not called as soon as the compute function goes out of scope
   allocator getmem;
   globalAllocator = globalAllocator == NULL ? &getmem : globalAllocator;
   if (ptr1==NULL)
-    {
+  {
     ptr1 = (double*) globalAllocator->allocate(dlen);
-    }  
+  }
 
-  getdata(datafile, arr, dlen);
+  // Compute the conversion from array a to b.
   compute(arr, ptr1, dlen);
 
+  // Calculate mean by summation of all values and then division by length.
   double meanvalue = mean(ptr1, dlen);
+
+  // Print mean value
   printf("meanvalue %15le\n", meanvalue);
   printf("data sample\n");
+
+  // Print first 10 numbers in the ptr1 array
   for (unsigned int i=0; i<10; i++)
     printf("%le ", ptr1[i]);
   printf("\n");
