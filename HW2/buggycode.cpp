@@ -172,5 +172,7 @@ int main(int argc, char* argv[])
   for (unsigned int i=0; i<10; i++)
     printf("%le ", ptr1[i]);
   printf("\n");
+
+  delete[] arr;
   return 0;
 }
