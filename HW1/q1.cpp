@@ -127,4 +127,5 @@ int main()
     // Function above has all the code and comments
     exponent_extractor(65.56);
     exponent_extractor(1.5);
+    exponent_extractor(4.5);
 }

@@ -51,6 +51,7 @@
         "typeinfo": "cpp",
         "bitset": "cpp",
         "iomanip": "cpp",
-        "ctime": "cpp"
+        "ctime": "cpp",
+        "complex": "cpp"
     }
 }
