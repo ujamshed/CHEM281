@@ -18,7 +18,7 @@ void solution(int x, int arr[], int sum, int index)
     }
 
     int value = 1;
-
+                                // Index is 0 OR // Value is less than or equal to the previous value in array
     while ((value <= x-sum) && ((index == 0) || (value <= arr[index-1])))
     {
         arr[index] = value;

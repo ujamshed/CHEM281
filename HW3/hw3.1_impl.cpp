@@ -4,17 +4,14 @@
 
 std::complex<double> MyPotential::eval(const std::complex<double> r)
 {
-    std::complex<double> r2 = pow(r, 2);
-    std::complex<double> r6 = pow(r, 6);
-    std::complex<double> r_r2((r2.real() / (pow(r2.real(), 2) + pow(r2.imag(), 2))), (-r2.imag() / (pow(r2.real(), 2) + pow(r2.imag(), 2))));
-    std::complex<double> r_r6((r6.real() / (pow(r6.real(), 2) + pow(r6.imag(), 2))), (-r6.imag() / (pow(r6.real(), 2) + pow(r6.imag(), 2))));
-    
-
-    return r2 - r6;
+  /* implement */
+    std::complex<double> numerator(1.0, 0.0);
+    return (numerator / pow(r, 2)) - (numerator / pow(r, 6)); 
 }
 
 std::complex<double> MyCosine::eval(const std::complex<double> r)
 {
+  /* implement */
     return cos(r);
 }
 
@@ -26,6 +23,7 @@ std::complex<double> MyCosine::eval(const std::complex<double> r)
 
 double firstDerivative(Derivable& d, const double r)
 {
+    /* implement */
     // Create complex input to derivable, imaginary part is step_size*i, which is ih
     double step_size = 10e-10;
     std::complex<double> complex_r(r, step_size);
