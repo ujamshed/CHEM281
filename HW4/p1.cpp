@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 
+// Generic print function
 void print(std::vector<int> array)
 {
     for (int i = 0; i < array.size(); i++)
@@ -12,7 +13,7 @@ void print(std::vector<int> array)
 
 void game(std::vector<int> array, int m, int starting_index)
 {
-    // base case
+    // base case to print and return when there is only 1 person left in the circle.
     if (array.size() == 1)
     {
         std::cout << "Position " << array[0] << " corresponding to person: " << array[0] + 1 << " is the winner!" << std::endl;

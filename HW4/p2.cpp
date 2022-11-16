@@ -3,11 +3,19 @@
 #include <algorithm>
 #include <map>
 
+// Generic print function
 void print(std::vector<int> array)
 {
     for (int i = 0; i < array.size(); i++)
     {
-        std::cout << array[i] << " ";
+        if (i == array.size()-1)
+        {
+            std::cout << array[i] << "";
+        }
+        else
+        {
+            std::cout << array[i] << "->";
+        }
     }
     std::cout << std::endl;
 }
@@ -35,7 +43,7 @@ std::map<int, std::vector<int>> job_dependents(std::vector<std::pair<int, int>> 
 
 void scheduler(int num_jobs, std::map<int, std::vector<int>> jobs, std::vector<int> schedule)
 {
-    // Base case: if the number of completedJobs is equal to the number of jobs to do, then we print the current schedule and then return
+    // Base case: if the number of jobs in the schedule is equal to the number of jobs to do, then we print the current schedule and then return
     if (schedule.size() == num_jobs)
     {
         print(schedule);
@@ -105,10 +113,10 @@ int main()
     // This is because each job will at a minimum depend on itself.
     
     // Input vector of tuples
-    std::vector<std::pair<int, int>> job_dependencies = {{0, 0}, {1, 0}, {2, 3}, {2, 4}, {3, 4}, {4, 1}};
+    std::vector<std::pair<int, int>> job_dependencies = {{0, 0}, {1, 0}, {2, 3}, {2, 4}, {3, 4}, {4, 1}, {5, 6}, {6, 4}, {7, 6}, {5, 7}};
     
     // Input number of jobs
-    int num_jobs = 5;
+    int num_jobs = 8;
 
     // Start
     start(num_jobs, job_dependencies);
