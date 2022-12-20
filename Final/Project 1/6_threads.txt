@@ -1,0 +1,6 @@
+number of threads=6
+Length of array is: 1048579
+0 2098 2394 3454 4778 6682 5962 
+serial run tool 2380 microsecs
+running on 6 threads took 1489 microsecs
+right answer 5962 parallel answer: 5962

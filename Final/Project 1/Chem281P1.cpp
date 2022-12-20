@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <string.h>
 #include <omp.h>
+#include <iostream>
 
 // Timer Utility
 
@@ -102,20 +103,49 @@ int main(int argc, char* argv[])
   int64_t* locallast = new int64_t[number_of_threads+1];
   locallast[0] = 0;
 
+  // Check length of array
+  printf("Length of array is: %d\n", l);
+
   timer.start();
+
   // Create a parallel region. Make all the predefined variables shared
   // by default - hint: use the clause default(shared)
+  int i, tid, numt = 0; 
+
+  #pragma omp parallel default(shared) private(i, tid)
   {
     // partition the array into as many subarray chunks as number_of_threads
     // compute the chunk size to be assigned to each thread
     // For each threads
-    
+    tid = omp_get_thread_num();
+    numt = omp_get_num_threads();
+
     // compute the beginning and end (length) of the corresponding
     // partition of the array. hint: You can use the thread number to
     // compute the corresponding chunk.
     // Caution: the length of the last chunk may be different from the
     // length of the other chunks if the size of the data is not a multiple
     // of the number of threads
+
+    // l is the array size
+    int sub_array_start = (l / numt) * tid;
+    int sub_array_end = (l / numt) * (tid + 1);
+
+    // If the thread id is the last thread, then it will go until the last element in the array. This is if the array space is not divisible into 
+    // the number of threads equally.
+    if (tid == numt-1)
+    {
+      sub_array_end = l;
+    }
+
+    for (i = sub_array_start + 1; i < sub_array_end; i++)
+    {
+      v[i] += v[i-1];
+    }
+
+    locallast[tid+1] = v[sub_array_end-1];
+    
+    //printf("Thread number %d of %d, sub array range is begins at %d and ends at %d\n", tid, numt, sub_array_start, sub_array_end);
 
     // for each thread serially accumulate the entries on its subarray/partition
     // as has been done in the serial loop for s above
@@ -126,16 +156,23 @@ int main(int argc, char* argv[])
     
     // Next, you need to synchronize to ensure that all threads have completed
     // their task before moving to next step
+    #pragma omp barrier
 
     // Next, create a serial region (single thread). You can use the master
     // thread to execute this region
+    #pragma omp master
     {
-    // in the serial region, accumulate all the values in *locallast* array
+      for (int j=1; j < number_of_threads+1; j++)
+      {
+        locallast[j] += locallast[j-1];
+      }
+      // in the serial region, accumulate all the values in *locallast* array
     }
 
     // All other threads must wait until the serial region finishes accumulating
     // the entries in *locallast* array. Synchronize again before proceeding
     // to the next step
+    #pragma omp barrier
 
     // Now you need each thread has to loop over its array partition
     // to add to each entry in its local subarray the value of the
@@ -145,8 +182,22 @@ int main(int argc, char* argv[])
     // This value to add is the value in *locallast* computed previously in the
     // preceeding serial region. The corresponding entry is equal to the
     // loop index assigned to the thread by the for loop
+
+    for (i = sub_array_start + 1; i < sub_array_end; i++)
+    {
+      v[i] += locallast[tid];
     }
+
+    }
+  
   uint64_t elapsed_time = timer.stop();
+
+  for(int j=0; j < number_of_threads+1; j++)
+  {
+    std::cout << locallast[j] << " ";
+  }
+  std::cout << std::endl;
+
   printf("serial run tool %lu microsecs\n", elapsed_serial);
   printf("running on %u threads took %lu microsecs\n", number_of_threads, elapsed_time);
   printf("right answer %ld parallel answer: %ld\n", s[l-1], v[l-1]);

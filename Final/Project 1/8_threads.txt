@@ -1,0 +1,6 @@
+number of threads=8
+Length of array is: 1048579
+0 1705 3035 2327 3454 4655 5104 6889 5962 
+serial run tool 2386 microsecs
+running on 8 threads took 1254 microsecs
+right answer 5962 parallel answer: 5962
