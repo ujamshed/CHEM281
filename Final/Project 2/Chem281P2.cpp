@@ -1,4 +1,4 @@
-
+#include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -68,6 +68,22 @@ void fillMatrices(double*& a, double*& b, double*& c,
   return;
 }
 
+// function to see if matrices are correct
+void print(double* __restrict__ amat, int rows, int cols)
+{
+  typedef double (*matrix_ptrA)[rows];
+  matrix_ptrA a = (matrix_ptrA) amat;
+
+  for (int i=0; i < rows; i++)
+  {
+    for (int j=0; j < cols; j++)
+    {
+      std::cout << a[i][j] << " ";
+    }
+    std::cout << "\n";
+  }
+}
+
 void matmulloop(double* __restrict__ amat, double* __restrict__ bmat,
 	     double* __restrict__ cmat,
              const unsigned int rowsA, const unsigned int colsA,
@@ -93,11 +109,17 @@ void matmulloop(double* __restrict__ amat, double* __restrict__ bmat,
   Experiment with different number of threads. How does the code scale?
   (one thread vs 2 threads vs 4 threads);
    */
-  
-  for (unsigned j=0; j<colsB; j++)     // loop j
+  #pragma omp parallel
+  {
+    // Loop i can be parallelized
+    #pragma omp for
     for (unsigned i=0; i<rowsA; i++)   // loop i
+      // Loop k cannot be parallelized
       for (unsigned k=0; k<colsA; k++) // loop k
-	c[i][j] += a[i][k]*b[k][j];
+        // Loop j can be parallelized, but cannot be nested. Its faster to have the parallel section start at the top of the nested loops than here.
+        for (unsigned j=0; j<colsB; j++)// loop j
+	          c[i][j] += a[i][k]*b[k][j];
+  }
 }
 
 
@@ -136,7 +158,8 @@ enum RunMode { LOOP, TILED, BLAS };
 
 struct P2Config
 {
-  P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
+  // P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
+  P2Config() : runMode(LOOP), row_tile(512), col_tile(512), inner_tile(512) {}
   RunMode      runMode;
   unsigned int row_tile;
   unsigned int col_tile;
@@ -205,9 +228,14 @@ int main(int argc, const char* argv[])
 {
   srand(223011);
   P2Config config = parseargs(argc-1, argv+1);
-  unsigned int rowsA=4096;
-  unsigned int colsA=4096;
-  unsigned int colsB=4096;
+  // unsigned int rowsA=4096;
+  // unsigned int colsA=4096;
+  // unsigned int colsB=4096;
+
+  // Changed sizes to run locally and not on perlmutter
+  unsigned int rowsA=512;
+  unsigned int colsA=512;
+  unsigned int colsB=512;
 
   double* a = NULL;
   double* b = NULL;
@@ -215,7 +243,19 @@ int main(int argc, const char* argv[])
 
   Timer281 t;
   fillMatrices(a, b, c, rowsA, colsA, colsB);
-  
+
+  // std::cout << "Matrix A:" << std::endl;
+  // print(a, rowsA, colsA);
+  // std::cout << std::endl;
+
+  // std::cout << "Matrix B:" << std::endl;
+  // print(b, colsA, colsB);
+  // std::cout << std::endl;
+
+  // std::cout << "Matrix C:" << std::endl;
+  // print(c, rowsA, colsB);
+  // std::cout << std::endl;
+
 #pragma omp parallel
   {
 #pragma omp single
@@ -229,6 +269,10 @@ int main(int argc, const char* argv[])
     t.start();
     matmulloop(a, b , c, rowsA, colsA, colsB);
     uint64_t loop_time = t.stop();
+
+    // std::cout << "Matrix C after multiplication:" << std::endl;
+    // print(c, rowsA, colsB);
+    // std::cout << std::endl;
 
     printf("Time loop %lu\n", loop_time);
     }
