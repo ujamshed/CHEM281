@@ -109,19 +109,15 @@ void matmulloop(double* __restrict__ amat, double* __restrict__ bmat,
   Experiment with different number of threads. How does the code scale?
   (one thread vs 2 threads vs 4 threads);
    */
-  #pragma omp parallel
-  {
     // Loop i can be parallelized
-    #pragma omp for
+    #pragma omp parallel for
     for (unsigned i=0; i<rowsA; i++)   // loop i
-      // Loop k cannot be parallelized
+      // Loop k cannot be parallelized as it will cause incorrect output
       for (unsigned k=0; k<colsA; k++) // loop k
-        // Loop j can be parallelized, but cannot be nested. Its faster to have the parallel section start at the top of the nested loops than here.
+        // Loop j can be parallelized, but its faster to have the parallelization occur only on loop i
         for (unsigned j=0; j<colsB; j++)// loop j
 	          c[i][j] += a[i][k]*b[k][j];
-  }
 }
-
 
 void matmultile(double* __restrict__ amat, double* __restrict__ bmat,
 		double* __restrict__ cmat,
