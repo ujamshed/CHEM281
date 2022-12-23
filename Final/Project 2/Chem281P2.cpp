@@ -144,9 +144,20 @@ void matmultile(double* __restrict__ amat, double* __restrict__ bmat,
   const unsigned int s=tilei;
   const unsigned int p=tilej;
   const unsigned int t=tilek;
+
   {
     // Write the inner loop here
     // Then parallelize it using OpenMP
+    int sum;
+    #pragma omp parallel for private(sum)
+    for (unsigned i=0; i<s; i++)   // loop i
+      for (unsigned j=0; j<p; j++){// loop j
+        sum = 0;
+        for (unsigned k=0; k<t; k++){ // loop k
+	          sum += a[i][k]*b[k][j];
+        }
+        c[i][j] += sum;
+    }
   }
 }
 
@@ -229,9 +240,9 @@ int main(int argc, const char* argv[])
   // unsigned int colsB=4096;
 
   // Changed sizes to run locally and not on perlmutter
-  unsigned int rowsA=512;
-  unsigned int colsA=512;
-  unsigned int colsB=512;
+  unsigned int rowsA=3;
+  unsigned int colsA=3;
+  unsigned int colsB=3;
 
   double* a = NULL;
   double* b = NULL;
@@ -248,9 +259,9 @@ int main(int argc, const char* argv[])
   // print(b, colsA, colsB);
   // std::cout << std::endl;
 
-  // std::cout << "Matrix C:" << std::endl;
-  // print(c, rowsA, colsB);
-  // std::cout << std::endl;
+  std::cout << "Initial Matrix C:" << std::endl;
+  print(c, rowsA, colsB);
+  std::cout << std::endl;
 
 #pragma omp parallel
   {
@@ -266,9 +277,9 @@ int main(int argc, const char* argv[])
     matmulloop(a, b , c, rowsA, colsA, colsB);
     uint64_t loop_time = t.stop();
 
-    // std::cout << "Matrix C after multiplication:" << std::endl;
-    // print(c, rowsA, colsB);
-    // std::cout << std::endl;
+    std::cout << "Matrix C after multiplication:" << std::endl;
+    print(c, rowsA, colsB);
+    std::cout << std::endl;
 
     printf("Time loop %lu\n", loop_time);
     }
@@ -278,6 +289,10 @@ int main(int argc, const char* argv[])
     matmultile(a, b , c, rowsA, colsA, colsB, config.row_tile,
 	       config.col_tile, config.inner_tile);
     uint64_t slice_time = t.stop();
+
+    std::cout << "Matrix C after multiplication:" << std::endl;
+    print(c, rowsA, colsB);
+    std::cout << std::endl;
 
     printf("Time slice %lu\n", slice_time);
     }
