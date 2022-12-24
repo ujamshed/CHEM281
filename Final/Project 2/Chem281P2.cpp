@@ -166,7 +166,7 @@ enum RunMode { LOOP, TILED, BLAS };
 struct P2Config
 {
   // P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
-  P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
+  P2Config() : runMode(LOOP), row_tile(3), col_tile(3), inner_tile(3) {}
   RunMode      runMode;
   unsigned int row_tile;
   unsigned int col_tile;
@@ -240,9 +240,9 @@ int main(int argc, const char* argv[])
   // unsigned int colsB=4096;
 
   // Changed sizes to run locally and not on perlmutter
-  unsigned int rowsA=512;
-  unsigned int colsA=512;
-  unsigned int colsB=512;
+  unsigned int rowsA=3;
+  unsigned int colsA=3;
+  unsigned int colsB=3;
 
   double* a = NULL;
   double* b = NULL;
@@ -261,9 +261,9 @@ int main(int argc, const char* argv[])
   // print(b, colsA, colsB);
   // std::cout << std::endl;
 
-  // std::cout << "Initial Matrix C:" << std::endl;
-  // print(c, rowsA, colsB);
-  // std::cout << std::endl;
+  std::cout << "Initial Matrix C:" << std::endl;
+  print(c, rowsA, colsB);
+  std::cout << std::endl;
 
 #pragma omp parallel
   {
