@@ -148,8 +148,8 @@ void matmultile(double* __restrict__ amat, double* __restrict__ bmat,
 
     // Outer for loops for tiling
     for (unsigned ii=0; ii < rowsA; ii += s)
-      for (unsigned jj=0; jj < colsB; jj+=p)
-        for (unsigned kk=0; kk < colsA; kk+=t)
+      for (unsigned jj=0; jj < colsB; jj += p)
+        for (unsigned kk=0; kk < colsA; kk += t)
         {
           // Write the inner loop here
           // Then parallelize it using OpenMP
