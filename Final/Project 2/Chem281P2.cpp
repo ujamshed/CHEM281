@@ -68,6 +68,7 @@ void fillMatrices(double*& a, double*& b, double*& c,
   return;
 }
 
+// Printing debugging so that matrix multiplication algorithms work as intended
 // function to see if matrices are correct
 void print(double* __restrict__ amat, int rows, int cols)
 {
@@ -145,20 +146,19 @@ void matmultile(double* __restrict__ amat, double* __restrict__ bmat,
   const unsigned int p=tilej;
   const unsigned int t=tilek;
 
-  {
-    // Write the inner loop here
-    // Then parallelize it using OpenMP
-    int sum;
-    #pragma omp parallel for private(sum)
-    for (unsigned i=0; i<s; i++)   // loop i
-      for (unsigned j=0; j<p; j++){// loop j
-        sum = 0;
-        for (unsigned k=0; k<t; k++){ // loop k
-	          sum += a[i][k]*b[k][j];
+    // Outer for loops for tiling
+    for (unsigned ii=0; ii < rowsA; ii += s)
+      for (unsigned jj=0; jj < colsB; jj+=p)
+        for (unsigned kk=0; kk < colsA; kk+=t)
+        {
+          // Write the inner loop here
+          // Then parallelize it using OpenMP
+          #pragma omp parallel for
+          for (unsigned i=ii; i<ii+s; i++)   // loop i
+            for (unsigned k=kk; k<kk+t; k++) // loop k
+              for (unsigned j=jj; j<jj+p; j++)// loop j
+                c[i][j] += a[i][k]*b[k][j];
         }
-        c[i][j] += sum;
-    }
-  }
 }
 
 enum RunMode { LOOP, TILED, BLAS };
@@ -166,7 +166,7 @@ enum RunMode { LOOP, TILED, BLAS };
 struct P2Config
 {
   // P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
-  P2Config() : runMode(LOOP), row_tile(512), col_tile(512), inner_tile(512) {}
+  P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
   RunMode      runMode;
   unsigned int row_tile;
   unsigned int col_tile;
@@ -240,9 +240,9 @@ int main(int argc, const char* argv[])
   // unsigned int colsB=4096;
 
   // Changed sizes to run locally and not on perlmutter
-  unsigned int rowsA=3;
-  unsigned int colsA=3;
-  unsigned int colsB=3;
+  unsigned int rowsA=512;
+  unsigned int colsA=512;
+  unsigned int colsB=512;
 
   double* a = NULL;
   double* b = NULL;
@@ -250,6 +250,8 @@ int main(int argc, const char* argv[])
 
   Timer281 t;
   fillMatrices(a, b, c, rowsA, colsA, colsB);
+
+  // Printing debugging so that matrix multiplication algorithms work as intended
 
   // std::cout << "Matrix A:" << std::endl;
   // print(a, rowsA, colsA);
@@ -259,9 +261,9 @@ int main(int argc, const char* argv[])
   // print(b, colsA, colsB);
   // std::cout << std::endl;
 
-  std::cout << "Initial Matrix C:" << std::endl;
-  print(c, rowsA, colsB);
-  std::cout << std::endl;
+  // std::cout << "Initial Matrix C:" << std::endl;
+  // print(c, rowsA, colsB);
+  // std::cout << std::endl;
 
 #pragma omp parallel
   {
@@ -321,12 +323,14 @@ int main(int argc, const char* argv[])
      Nineth parameter: the leading dimension of A
       The matrices A, B and C may have a leading dimension greater than the 
       number of columns specified for the multiplication
-     Tenth parameter: the leading dimension of matrix B
-     Eleventh parameter: the constant beta (double)
-     Twelve parameter: the leading dimension of matrix C
+     Tenth parameter: the matrix B
+     Eleventh parameter: the leading dimension of matrix B
+     Twelveth parameter: the constant beta (double)
+     Thirtenth parameter: the matrix C
+     Fourtenth parameter: the leading dimension of matrix C
      */
-    cblas_dgemm( , , , , , ,
-	         , , , , , , , );
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rowsA, colsA, colsB,
+	         1.0, a, colsA, b, colsB, 1.0, c, colsB);
     uint64_t blas_time = t.stop();
 
     printf("Time blas %lu\n", blas_time);
