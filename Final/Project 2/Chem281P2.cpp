@@ -166,7 +166,7 @@ enum RunMode { LOOP, TILED, BLAS };
 struct P2Config
 {
   // P2Config() : runMode(LOOP), row_tile(4096), col_tile(4096), inner_tile(4096) {}
-  P2Config() : runMode(LOOP), row_tile(3), col_tile(3), inner_tile(3) {}
+  P2Config() : runMode(LOOP), row_tile(512), col_tile(512), inner_tile(512) {}
   RunMode      runMode;
   unsigned int row_tile;
   unsigned int col_tile;
@@ -240,9 +240,9 @@ int main(int argc, const char* argv[])
   // unsigned int colsB=4096;
 
   // Changed sizes to run locally and not on perlmutter
-  unsigned int rowsA=3;
-  unsigned int colsA=3;
-  unsigned int colsB=3;
+  unsigned int rowsA=512;
+  unsigned int colsA=512;
+  unsigned int colsB=512;
 
   double* a = NULL;
   double* b = NULL;
@@ -261,9 +261,9 @@ int main(int argc, const char* argv[])
   // print(b, colsA, colsB);
   // std::cout << std::endl;
 
-  std::cout << "Initial Matrix C:" << std::endl;
-  print(c, rowsA, colsB);
-  std::cout << std::endl;
+  // std::cout << "Initial Matrix C:" << std::endl;
+  // print(c, rowsA, colsB);
+  // std::cout << std::endl;
 
 #pragma omp parallel
   {
@@ -279,9 +279,9 @@ int main(int argc, const char* argv[])
     matmulloop(a, b , c, rowsA, colsA, colsB);
     uint64_t loop_time = t.stop();
 
-    std::cout << "Matrix C after multiplication:" << std::endl;
-    print(c, rowsA, colsB);
-    std::cout << std::endl;
+    // std::cout << "Matrix C after multiplication:" << std::endl;
+    // print(c, rowsA, colsB);
+    // std::cout << std::endl;
 
     printf("Time loop %lu\n", loop_time);
     }
@@ -292,9 +292,9 @@ int main(int argc, const char* argv[])
 	       config.col_tile, config.inner_tile);
     uint64_t slice_time = t.stop();
 
-    std::cout << "Matrix C after multiplication:" << std::endl;
-    print(c, rowsA, colsB);
-    std::cout << std::endl;
+    // std::cout << "Matrix C after multiplication:" << std::endl;
+    // print(c, rowsA, colsB);
+    // std::cout << std::endl;
 
     printf("Time slice %lu\n", slice_time);
     }
