@@ -147,16 +147,19 @@ void matmultile(double* __restrict__ amat, double* __restrict__ bmat,
   const unsigned int t=tilek;
 
     // Outer for loops for tiling
+    #pragma omp parallel for
     for (unsigned ii=0; ii < rowsA; ii += s)
-      for (unsigned jj=0; jj < colsB; jj += p)
-        for (unsigned kk=0; kk < colsA; kk += t)
+      for (unsigned kk=0; kk < colsA; kk += t)
+        for (unsigned jj=0; jj < colsB; jj += p)
         {
           // Write the inner loop here
           // Then parallelize it using OpenMP
-          #pragma omp parallel for
-          for (unsigned i=ii; i<ii+s; i++)   // loop i
-            for (unsigned k=kk; k<kk+t; k++) // loop k
-              for (unsigned j=jj; j<jj+p; j++)// loop j
+          unsigned int i_max = std::min(ii+s, rowsA);
+          unsigned int j_max = std::min(jj+p, colsA);
+          unsigned int k_max = std::min(kk+t, colsB);
+          for (unsigned i=ii; i<i_max; i++)   // loop i
+            for (unsigned k=kk; k<k_max; k++) // loop k
+              for (unsigned j=jj; j<j_max; j++)// loop j
                 c[i][j] += a[i][k]*b[k][j];
         }
 }

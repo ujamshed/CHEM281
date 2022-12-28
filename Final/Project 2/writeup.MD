@@ -22,40 +22,33 @@
 | 6           | 31458831      |
 | 8           | 28976094      |
 
-# 2) Local experiments using 512 x 512 matrices. The tiling code also scales decently well with more threads, with 8x as many threads yielding a difference of 2.4x. These results are the base configuration where the tiling is equal to the size of the matrices (512 for each parameter).
+# 2) On Perlmutter using 4096 x 4096 matrices, with tile size of 128. As the number of threads increases, the duration of time taken for the code to run drops from 15 seconds to 2.5 seconds, which is a significant improvement. This code scales much better than the looped implementation because the difference with different number of threads is greater.
 
 | Threads     | Time          | Difference    |
 | ----------- |  -----------  | ------------- |
-| 1           | 447611        | -             |
-| 2           | 293610        | 1.5x          |
-| 4           | 219341        | 2.0x          |
-| 6           | 195747        | 2.3x          |
-| 8           | 185957        | 2.4x          |
+| 1           | 15556699      | -             |
+| 2           | 9075611       | 1.7x          |
+| 4           | 4697657       | 3.3x          |
+| 6           | 2932261       | 5.3x          |
+| 8           | 2461152       | 6.3x          |
 
-# 2) On Perlmutter using 4096 x 4096 matrices.
-
-| Threads     | Time          |
-| ----------- |  -----------  |
-| 1           | 17712725      |
-| 2           | 16558543      |
-| 4           | 21508879      |
-| 6           | 30168110      |
-| 8           | 28977283      |
-
-# Locally comparing tile sizes (512 x 512). When comparing which tile sizes yield the best benefit, the size equivalent to the size of the matrix dimensions was the best. All results were done on one thread. However, past a tile size of 128, the difference become less pronounced.
+# Comparing different tile sizes on perlmutter with 4096 x 4096 matrices with 8 threads.
 
 | Tile size   | Time          | Difference    |
 | ----------- |  -----------  | ------------- |
-| 2           | 7805458       | -             |
-| 4           | 1496202       | 5.2x          |
-| 8           | 654304        | 11.9x         |
-| 16          | 502953        | 15.5x         |
-| 32          | 485872        | 16.1x         |
-| 64          | 469540        | 16.6x         |
-| 128         | 468883        | 16.6x         |
-| 256         | 462785        | 16.9x         |
-| 512         | 451060        | 17.3x         |
+| 2           | 36880087      | -             |
+| 4           | 25465816      | 1.4x          |
+| 8           | 6385368       | 5.8x          |
+| 16          | 4246257       | 8.7x          |
+| 32          | 3296934       | 11.2x         |
+| 64          | 3124640       | 11.8x         |
+| 128         | 2512080       | 14.7x         |
+| 256         | 2209295       | 16.7x         |
+| 512         | 1831821       | 20.1x         |
+| 1024        | 3272274       | 11.3x         |
+| 2048        | 10683198      | 3.4x          |
 
+# The best tile size is 512. As tile size increasesfrom 2 to 512 time decreases as shown by the difference. However, past 512 tile size the time increases.
 
 # 3) Ran on Perlmutter using 4096 x 4096 matrices.
 
@@ -97,32 +90,35 @@ Time loop 23580336
        0.027993000 seconds sys
 ```
 
-## For --tiled with 4 threads and tiling size of 4096
+## For --tiled with 4 threads and optimal tiling size of 512
 ```console
-jamshedu@nid004679:~> srun -n 1 perf stat ./Chem281P2 --tiled --threads 4
+jamshedu@nid004676:~> srun -n 1 perf stat ./Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4
 runMode set to tiled
+runMode TILED, row_tile set to 512
+runMode TILED, col_tile set to 512
+runMode TILED, inner_tile set to 512
 number of threads set to 4
 number of threads=4
-Time slice 23451826
+Time slice 3599011
 
- Performance counter stats for './Chem281P2 --tiled --threads 4':
+ Performance counter stats for './Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4':
 
-         87,976.13 msec task-clock:u              #    3.600 CPUs utilized
+         14,299.46 msec task-clock:u              #    3.124 CPUs utilized
                  0      context-switches:u        #    0.000 /sec
                  0      cpu-migrations:u          #    0.000 /sec
-             2,757      page-faults:u             #   31.338 /sec
-   306,824,291,167      cycles:u                  #    3.488 GHz                      (83.34%)
-       713,539,403      stalled-cycles-frontend:u #    0.23% frontend cycles idle     (83.33%)
-        12,322,179      stalled-cycles-backend:u  #    0.00% backend cycles idle      (83.34%)
-   110,611,402,813      instructions:u            #    0.36  insn per cycle
-                                                  #    0.01  stalled cycles per insn  (83.34%)
-    18,934,885,091      branches:u                #  215.228 M/sec                    (83.33%)
-        43,750,006      branch-misses:u           #    0.23% of all branches          (83.33%)
+             2,755      page-faults:u             #  192.665 /sec
+    49,786,922,799      cycles:u                  #    3.482 GHz                      (83.32%)
+       167,853,048      stalled-cycles-frontend:u #    0.34% frontend cycles idle     (83.36%)
+        12,544,208      stalled-cycles-backend:u  #    0.03% backend cycles idle      (83.36%)
+   114,158,525,307      instructions:u            #    2.29  insn per cycle
+                                                  #    0.00  stalled cycles per insn  (83.33%)
+    19,530,774,362      branches:u                #    1.366 G/sec                    (83.33%)
+       161,395,124      branch-misses:u           #    0.83% of all branches          (83.32%)
 
-      24.435614356 seconds time elapsed
+       4.577342843 seconds time elapsed
 
-      87.916141000 seconds user
-       0.055984000 seconds sys
+      14.257712000 seconds user
+       0.043968000 seconds sys
 ```
 
 ## For --blas
@@ -150,4 +146,81 @@ Time blas 2721708
 
        8.031241000 seconds user
        0.074020000 seconds sys
+```
+
+# Performing cache misses examination
+
+## Best loop
+```console
+jamshedu@nid004431:~> perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations ./Chem281P2 --loop --threads 4
+runMode set to loop
+number of threads set to 4
+number of threads=4
+Time loop 30356071
+
+ Performance counter stats for './Chem281P2 --loop --threads 4':
+
+    28,135,372,927      cache-references:u
+       386,881,492      cache-misses:u            #    1.375 % of all cache refs
+   349,677,341,803      cycles:u
+   110,678,755,082      instructions:u            #    0.32  insn per cycle
+    18,928,354,924      branches:u
+             2,758      faults:u
+                 0      migrations:u
+
+      31.465745249 seconds time elapsed
+
+     100.000627000 seconds user
+       0.187963000 seconds sys
+```
+
+## Best tile
+```console
+jamshedu@nid004431:~> perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations ./Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4
+runMode set to tiled
+runMode TILED, row_tile set to 512
+runMode TILED, col_tile set to 512
+runMode TILED, inner_tile set to 512
+number of threads set to 4
+number of threads=4
+Time slice 3668195
+
+ Performance counter stats for './Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4':
+
+    21,364,040,605      cache-references:u
+     3,215,530,374      cache-misses:u            #   15.051 % of all cache refs
+    46,986,727,341      cycles:u
+   114,150,802,838      instructions:u            #    2.43  insn per cycle
+    19,514,080,029      branches:u
+             2,747      faults:u
+                 0      migrations:u
+
+       4.619709977 seconds time elapsed
+
+      13.477414000 seconds user
+       0.044004000 seconds sys
+```
+
+## Blas
+```console
+jamshedu@nid004431:~> perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations ./Chem281P2 --blas --threads 4
+runMode set to blas
+number of threads set to 4
+number of threads=4
+Time blas 2716706
+
+ Performance counter stats for './Chem281P2 --blas --threads 4':
+
+     2,005,755,760      cache-references:u
+       271,147,924      cache-misses:u            #   13.518 % of all cache refs
+    12,782,620,015      cycles:u
+    39,337,255,501      instructions:u            #    3.08  insn per cycle
+     2,053,857,774      branches:u
+             2,989      faults:u
+                 0      migrations:u
+
+       3.665232067 seconds time elapsed
+
+       3.639149000 seconds user
+       0.043893000 seconds sys
 ```
