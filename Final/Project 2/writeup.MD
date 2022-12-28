@@ -152,75 +152,76 @@ Time blas 2721708
 
 ## Best loop
 ```console
-jamshedu@nid004431:~> perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations ./Chem281P2 --loop --threads 4
+jamshedu@nid004431:~> srun -n 1 perf stat -e L1-dcache-load-misses,dTLB-load-misses,l2_pf_hit_l2,l2_pf_miss_l2_hit_l3 ./Chem281P2 --loop --threads 4
 runMode set to loop
 number of threads set to 4
 number of threads=4
-Time loop 30356071
+Time loop 16130991
 
  Performance counter stats for './Chem281P2 --loop --threads 4':
 
-    28,135,372,927      cache-references:u
-       386,881,492      cache-misses:u            #    1.375 % of all cache refs
-   349,677,341,803      cycles:u
-   110,678,755,082      instructions:u            #    0.32  insn per cycle
-    18,928,354,924      branches:u
-             2,758      faults:u
-                 0      migrations:u
+    17,391,437,485      L1-dcache-load-misses:u
+            18,847      dTLB-load-misses:u
+    15,916,972,095      l2_pf_hit_l2:u
+     1,706,488,857      l2_pf_miss_l2_hit_l3:u
 
-      31.465745249 seconds time elapsed
+      17.108746064 seconds time elapsed
 
-     100.000627000 seconds user
-       0.187963000 seconds sys
+      61.806121000 seconds user
+       0.039991000 seconds sys
 ```
 
 ## Best tile
 ```console
-jamshedu@nid004431:~> perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations ./Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4
+jamshedu@nid004431:~> srun -n 1 perf stat -e L1-dcache-load-misses,dTLB-load-misses,l2_pf_hit_l2,l2_pf_miss_l2_hit_l3 ./Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4
 runMode set to tiled
 runMode TILED, row_tile set to 512
 runMode TILED, col_tile set to 512
 runMode TILED, inner_tile set to 512
 number of threads set to 4
 number of threads=4
-Time slice 3668195
+Time slice 3391913
 
  Performance counter stats for './Chem281P2 --tiled --row_tile 512 --col_tile 512 --inner_tile 512 --threads 4':
 
-    21,364,040,605      cache-references:u
-     3,215,530,374      cache-misses:u            #   15.051 % of all cache refs
-    46,986,727,341      cycles:u
-   114,150,802,838      instructions:u            #    2.43  insn per cycle
-    19,514,080,029      branches:u
-             2,747      faults:u
-                 0      migrations:u
+     9,543,251,267      L1-dcache-load-misses:u
+            17,433      dTLB-load-misses:u
+     3,388,007,186      l2_pf_hit_l2:u
+     9,612,889,715      l2_pf_miss_l2_hit_l3:u
 
-       4.619709977 seconds time elapsed
+       4.501977406 seconds time elapsed
 
-      13.477414000 seconds user
-       0.044004000 seconds sys
+      12.764877000 seconds user
+       0.175901000 seconds sys
 ```
 
 ## Blas
 ```console
-jamshedu@nid004431:~> perf stat -B -e cache-references,cache-misses,cycles,instructions,branches,faults,migrations ./Chem281P2 --blas --threads 4
+jamshedu@nid004431:~> srun -n 1 perf stat -e L1-dcache-load-misses,dTLB-load-misses,l2_pf_hit_l2,l2_pf_miss_l2_hit_l3 ./Chem281P2 --blas
 runMode set to blas
-number of threads set to 4
-number of threads=4
-Time blas 2716706
+number of threads=256
+Time blas 2718682
 
- Performance counter stats for './Chem281P2 --blas --threads 4':
+ Performance counter stats for './Chem281P2 --blas':
 
-     2,005,755,760      cache-references:u
-       271,147,924      cache-misses:u            #   13.518 % of all cache refs
-    12,782,620,015      cycles:u
-    39,337,255,501      instructions:u            #    3.08  insn per cycle
-     2,053,857,774      branches:u
-             2,989      faults:u
-                 0      migrations:u
+     1,203,277,069      L1-dcache-load-misses:u
+           334,824      dTLB-load-misses:u
+     1,331,616,998      l2_pf_hit_l2:u
+       326,356,463      l2_pf_miss_l2_hit_l3:u
 
-       3.665232067 seconds time elapsed
+       3.718707812 seconds time elapsed
 
-       3.639149000 seconds user
-       0.043893000 seconds sys
+       7.970108000 seconds user
+       0.069590000 seconds sys
 ```
+
+## Cache misses summary
+
+| Criteria                 | Loop           | Tiled         | Blas         |
+| ------------------------ |  -----------   | ------------- | ------------ |
+| L1-dcache-load-misses:u  | 17,391,437,485 | 9,543,251,267 | 1,203,277,069|
+| dTLB-load-misses:u       | 18,847         | 17,433        | 334,824      |
+| l2_pf_hit_l2:u           | 15,916,972,095 | 3,388,007,186 | 1,331,616,998|
+| l2_pf_miss_l2_hit_l3:u   | 1,706,488,857  | 9,612,889,715 | 326,356,463  |
+
+## Examining the cache misses we see that the loop implementation has the highest l1 cache misses and the highest l2 prefetch and hit in l2. This explains why it takes the longest time because for every piece of data it is missing in the l1 cache it must check the l2 cache to retrieve it, if it is there. These misses add a ton of time to the program. In the tiled implementation our cache misses are fewer which saves us time but most of our hits if we miss the l1 cache are in the l3 cache and not in the l2 cache which takes more time to access but since we have less misses overall we are still seeing improvement. For Blas we see the fewest l1 cache misses but greater TLB misses.
